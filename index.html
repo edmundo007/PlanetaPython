@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="screen-orientation" content="portrait">
+<title>PyPlanet Adventure</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --py-blue: #306998;
+    --py-yellow: #FFD43B;
+    --py-dark: #1a1a2e;
+    --py-darker: #0d0d1a;
+    --py-green: #4CAF50;
+    --py-red: #f44336;
+    --py-orange: #FF8C00;
+    --mars-sky: #c1440e;
+    --mars-ground: #8b3a0f;
+    --console-bg: #0a0a0a;
+    --console-text: #00ff41;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--py-darker);
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  #app {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen {
+    display: none;
+    width: 100%; height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: absolute;
+    top: 0; left: 0;
+  }
+  .screen.active { display: flex; }
+
+  /* ===== MAIN MENU ===== */
+  #screen-menu {
+    background: radial-gradient(ellipse at 50% 30%, #1a2a4a 0%, var(--py-darker) 70%);
+    justify-content: center;
+  }
+
+  .stars {
+    position: absolute; width: 100%; height: 100%;
+    overflow: hidden; pointer-events: none;
+  }
+  .star {
+    position: absolute; background: white; border-radius: 50%;
+    animation: twinkle linear infinite;
+  }
+  @keyframes twinkle {
+    0%,100% { opacity: 0.2; } 50% { opacity: 1; }
+  }
+
+  .menu-logo {
+    text-align: center; z-index: 1; padding: 0 20px;
+    animation: fadeInDown 0.8s ease;
+  }
+  @keyframes fadeInDown { from { opacity:0; transform:translateY(-30px); } to { opacity:1; transform:translateY(0); } }
+
+  .logo-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(14px, 4vw, 22px);
+    color: var(--py-yellow);
+    text-shadow: 0 0 20px rgba(255,212,59,0.5), 2px 2px 0px #996600;
+    line-height: 1.4;
+    display: block;
+  }
+  .logo-subtitle {
+    font-size: clamp(8px, 2.5vw, 12px);
+    color: var(--py-blue);
+    text-shadow: 0 0 10px rgba(48,105,152,0.8);
+    margin-top: 8px;
+    display: block;
+    letter-spacing: 3px;
+  }
+
+  .planet-icon {
+    width: clamp(80px, 25vw, 120px);
+    height: clamp(80px, 25vw, 120px);
+    margin: 16px auto;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+
+  .menu-buttons {
+    display: flex; flex-direction: column;
+    gap: 12px; width: 80%; max-width: 280px;
+    margin-top: 16px; z-index: 1;
+  }
+
+  .btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(9px, 2.5vw, 13px);
+    padding: 14px 20px;
+    border: 3px solid;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    letter-spacing: 1px;
+    transition: transform 0.1s, box-shadow 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(0.96); }
+
+  .btn-play {
+    background: var(--py-yellow);
+    border-color: #996600;
+    color: #1a1a00;
+    box-shadow: 0 4px 0 #996600, 0 0 20px rgba(255,212,59,0.4);
+  }
+  .btn-play:active { box-shadow: 0 1px 0 #996600; transform: translateY(3px) scale(0.98); }
+
+  .btn-options {
+    background: var(--py-blue);
+    border-color: #1a3a5c;
+    color: white;
+    box-shadow: 0 4px 0 #1a3a5c;
+  }
+  .btn-options:active { box-shadow: 0 1px 0 #1a3a5c; transform: translateY(3px) scale(0.98); }
+
+  .btn-exit {
+    background: transparent;
+    border-color: #555;
+    color: #aaa;
+    box-shadow: 0 4px 0 #333;
+  }
+  .btn-exit:active { box-shadow: 0 1px 0 #333; transform: translateY(3px) scale(0.98); }
+
+  .btn-danger {
+    background: var(--py-red);
+    border-color: #8a0000;
+    color: white;
+    box-shadow: 0 4px 0 #8a0000;
+  }
+  .btn-success {
+    background: var(--py-green);
+    border-color: #1a6b1a;
+    color: white;
+    box-shadow: 0 4px 0 #1a6b1a;
+  }
+  .btn-neutral {
+    background: #444;
+    border-color: #222;
+    color: #eee;
+    box-shadow: 0 4px 0 #222;
+  }
+
+  /* ===== OPTIONS ===== */
+  #screen-options {
+    background: radial-gradient(ellipse at 50% 30%, #1a2a4a 0%, var(--py-darker) 70%);
+    justify-content: center;
+    gap: 30px;
+    padding: 40px 20px;
+  }
+  .options-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(14px, 4vw, 20px);
+    color: var(--py-yellow);
+    text-align: center;
+  }
+  .option-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(48,105,152,0.5);
+    border-radius: 8px;
+    padding: 16px 24px;
+    width: 85%; max-width: 320px;
+    gap: 20px;
+  }
+  .option-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(10px, 3vw, 14px);
+    color: white;
+  }
+  .toggle {
+    width: 64px; height: 32px;
+    background: #333; border-radius: 16px;
+    position: relative; cursor: pointer;
+    border: 2px solid #555;
+    transition: background 0.3s;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .toggle.on { background: var(--py-green); border-color: #1a6b1a; }
+  .toggle-knob {
+    width: 24px; height: 24px;
+    background: white; border-radius: 50%;
+    position: absolute; top: 2px; left: 2px;
+    transition: transform 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  }
+  .toggle.on .toggle-knob { transform: translateX(32px); }
+
+  /* ===== GAME SCREEN ===== */
+  #screen-game {
+    background: #000;
+    overflow: hidden;
+  }
+
+  /* Section 1: Mission description */
+  .section-top {
+    width: 100%;
+    background: linear-gradient(180deg, #1a0a2e 0%, #0d1a3a 100%);
+    border-bottom: 3px solid var(--py-blue);
+    padding: 10px 14px 8px;
+    flex-shrink: 0;
+  }
+  .level-badge {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--py-yellow);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .mission-text {
+    font-size: clamp(10px, 2.8vw, 13px);
+    color: #cce4ff;
+    line-height: 1.5;
+    letter-spacing: 0.3px;
+  }
+  .mission-text strong {
+    color: var(--py-yellow);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.85em;
+  }
+
+  /* Section 2: Game scene */
+  .section-scene {
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+  }
+  #game-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Section 3: Console */
+  .section-console {
+    width: 100%;
+    background: var(--console-bg);
+    border-top: 3px solid var(--py-blue);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    max-height: 220px;
+  }
+  .console-header {
+    background: #111;
+    padding: 5px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .console-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .console-header-text {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: #555;
+    margin-left: auto;
+  }
+  .console-input-area {
+    display: flex;
+    align-items: flex-start;
+    padding: 8px 12px;
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+  }
+  .console-prompt {
+    color: var(--py-green);
+    font-size: clamp(12px, 3.5vw, 16px);
+    padding-top: 2px;
+    flex-shrink: 0;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  /* Botón salir en sección top */
+  .btn-exit-game {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    padding: 5px 10px;
+    background: rgba(180,30,30,0.25);
+    border: 1px solid rgba(200,50,50,0.5);
+    border-radius: 4px;
+    color: #ff7777;
+    cursor: pointer;
+    float: right;
+    margin-top: -2px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-exit-game:active { opacity: 0.7; }
+
+  .btn-nav-level {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    padding: 5px 9px;
+    background: rgba(255,212,59,0.15);
+    border: 1px solid rgba(255,212,59,0.7);
+    border-radius: 4px;
+    color: #FFD43B;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.2s;
+  }
+  .btn-nav-level:active { opacity: 0.6; }
+  .btn-nav-level:disabled,
+  .btn-nav-level.disabled { opacity: 0.25; pointer-events: none; }
+
+  /* Editor syntax highlight */
+  .editor-wrapper {
+    flex: 1;
+    position: relative;
+    min-height: 80px;
+    height: 80px;
+  }
+  #highlight-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(12px, 3.5vw, 15px);
+    line-height: 1.6;
+    padding: 0;
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  #code-input {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: rgba(255,255,255,0.01);
+    caret-color: #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(12px, 3.5vw, 15px);
+    line-height: 1.6;
+    resize: none;
+    padding: 0;
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    z-index: 2;
+  }
+  #code-input::placeholder { color: #444; }
+  /* Syntax colors */
+  .sy-kw   { color: #ff7edb; }  /* keywords: print, if, while... */
+  .sy-bi   { color: #66d9ef; }  /* builtins */
+  .sy-num  { color: #ae81ff; }  /* numbers */
+  .sy-str  { color: #e6db74; }  /* strings */
+  .sy-op   { color: #f92672; }  /* operators = * + - */
+  .sy-id   { color: #a6e22e; }  /* identifiers / variables */
+  .sy-pun  { color: #f8f8f2; }  /* punctuation () */
+  .sy-cm   { color: #75715e; font-style: italic; } /* comments */
+  .console-footer {
+    padding: 6px 12px 10px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  #feedback-msg {
+    flex: 1;
+    font-size: clamp(9px, 2.5vw, 12px);
+    color: #ff4444;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .btn-validate {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(8px, 2.2vw, 10px);
+    padding: 10px 14px;
+    background: var(--py-blue);
+    border: 2px solid #1a3a5c;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1a3a5c;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-validate:active { transform: translateY(2px); box-shadow: 0 1px 0 #1a3a5c; }
+
+  /* ===== RESULT OVERLAY ===== */
+  #result-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+  }
+  #result-overlay.active { display: flex; }
+
+  .result-box {
+    background: var(--py-darker);
+    border: 3px solid;
+    border-radius: 8px;
+    padding: 24px 20px;
+    text-align: center;
+    max-width: 85%;
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .result-emoji {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 12px;
+  }
+  .result-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(11px, 3vw, 16px);
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+  .result-msg {
+    font-size: clamp(10px, 2.8vw, 13px);
+    color: #aaa;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .result-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ===== ATTACK ANIMATION ===== */
+  #attack-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 50;
+    display: none;
+  }
+  .laser-beam {
+    position: absolute;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #ff0000, #ff8800, #ffff00);
+    border-radius: 2px;
+    box-shadow: 0 0 8px #ff4400, 0 0 20px #ff0000;
+    transform-origin: right center;
+    animation: laserFire 0.6s ease-out forwards;
+  }
+  @keyframes laserFire {
+    0% { width: 0; opacity: 1; }
+    60% { width: 80%; opacity: 1; }
+    100% { width: 80%; opacity: 0; }
+  }
+  .screen-flash {
+    position: absolute; width: 100%; height: 100%;
+    background: rgba(255, 50, 0, 0.3);
+    animation: flash 0.4s ease-out forwards;
+  }
+  @keyframes flash {
+    0% { opacity: 0.8; } 100% { opacity: 0; }
+  }
+
+  /* ===== LEVEL INDICATOR ===== */
+  .level-dots {
+    display: flex; gap: 6px;
+    justify-content: center;
+    margin-top: 4px;
+  }
+  .level-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #333; border: 1px solid #555;
+  }
+  .level-dot.active { background: var(--py-yellow); border-color: #996600; }
+  .level-dot.done { background: var(--py-green); border-color: #1a6b1a; }
+
+  /* Hint button */
+  .btn-hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(9px, 2.5vw, 11px);
+    padding: 6px 12px;
+    background: rgba(255,212,59,0.15);
+    border: 1px solid rgba(255,212,59,0.4);
+    border-radius: 4px;
+    color: var(--py-yellow);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .hint-box {
+    background: rgba(255,212,59,0.08);
+    border: 1px solid rgba(255,212,59,0.3);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: clamp(9px, 2.5vw, 11px);
+    color: #ffd43b99;
+    display: none;
+    margin: 0 12px 6px;
+    font-family: 'Share Tech Mono', monospace;
+    line-height: 1.4;
+  }
+  .hint-box.visible { display: block; }
+
+
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ==================== MAIN MENU ==================== -->
+  <div id="screen-menu" class="screen active">
+    <div class="stars" id="stars"></div>
+
+    <div class="menu-logo">
+      <svg class="planet-icon" viewBox="0 0 120 120">
+        <!-- Planet Mars-like -->
+        <circle cx="60" cy="60" r="52" fill="#c1440e" />
+        <circle cx="60" cy="60" r="52" fill="url(#planetGrad)" />
+        <ellipse cx="50" cy="45" rx="18" ry="10" fill="rgba(255,180,100,0.4)" />
+        <ellipse cx="75" cy="68" rx="12" ry="6" fill="rgba(255,120,60,0.3)" />
+        <circle cx="38" cy="58" r="8" fill="rgba(100,30,0,0.5)" />
+        <circle cx="80" cy="42" r="5" fill="rgba(100,30,0,0.4)" />
+        <!-- Ring -->
+        <ellipse cx="60" cy="60" rx="58" ry="14" fill="none" stroke="rgba(255,200,100,0.6)" stroke-width="3" />
+        <!-- Iniciales -->
+        <text x="60" y="64" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="var(--py-yellow)" opacity="0.9">E.L.R.</text>
+        <defs>
+          <radialGradient id="planetGrad" cx="35%" cy="35%">
+            <stop offset="0%" stop-color="rgba(255,150,80,0.5)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0.4)"/>
+          </radialGradient>
+        </defs>
+      </svg>
+
+      <span class="logo-title">Planeta<br>Python</span>
+      <span class="logo-subtitle">Aprende Python 3.0</span>
+
+      <div class="level-dots" style="margin-top:12px;">
+        <div class="level-dot" id="dot-menu-1"></div>
+        <div class="level-dot" id="dot-menu-2"></div>
+        <div class="level-dot" id="dot-menu-3"></div>
+      </div>
+    </div>
+
+    <div class="menu-buttons">
+      <button class="btn btn-play" onclick="startGame()">▶ JUGAR</button>
+      <button class="btn btn-options" onclick="showScreen('screen-options')">⚙ OPCIONES</button>
+      <button class="btn btn-options" onclick="showScreen('screen-acerca')" style="background:#444;border-color:#222;box-shadow:0 4px 0 #222;">ℹ ACERCA DE</button>
+      <button class="btn btn-exit" onclick="exitGame()">✕ SALIR</button>
+    </div>
+
+  </div>
+
+  <!-- ==================== OPTIONS ==================== -->
+  <div id="screen-options" class="screen">
+    <div class="stars" id="stars2"></div>
+
+    <h2 class="options-title">OPCIONES</h2>
+
+    <div class="option-row">
+      <span class="option-label">🎵 MÚSICA</span>
+      <div class="toggle" id="music-toggle" onclick="toggleMusic()">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+
+    <p style="font-size:11px;color:#666;text-align:center;max-width:260px;line-height:1.6">
+      Activa ó Desactiva la música
+    </p>
+
+    <button class="btn btn-options" onclick="showScreen('screen-menu')" style="width:80%;max-width:280px">
+      ← REGRESAR
+    </button>
+  </div>
+
+  <!-- ==================== ACERCA DE ==================== -->
+  <div id="screen-acerca" class="screen">
+    <div class="stars" id="stars3"></div>
+
+    <h2 class="options-title" style="margin-top:60px;">ACERCA DE</h2>
+
+    <div style="z-index:1;display:flex;flex-direction:column;align-items:center;gap:24px;padding:30px 30px 0;max-width:340px;text-align:center;">
+
+      <p style="font-family:'Press Start 2P',monospace;font-size:clamp(11px,3vw,14px);color:var(--py-yellow);line-height:1.9;">
+        Elaborado por:<br>
+        <span style="color:white;">Edmundo Luevano Romero</span>
+      </p>
+
+      <div style="width:80%;height:2px;background:rgba(48,105,152,0.4);border-radius:1px;"></div>
+
+      <p style="font-family:'Share Tech Mono',monospace;font-size:clamp(10px,2.8vw,12px);color:#888;line-height:1.8;">
+        Ejercicios basados en el Libro:<br>
+        <span style="color:#aaa;">"Python para Todos"</span><br>
+        de Charles Severance
+      </p>
+
+    </div>
+
+    <button class="btn btn-options" onclick="showScreen('screen-menu')" style="width:80%;max-width:280px;margin-top:40px;z-index:1;">
+      ← ATRÁS
+    </button>
+  </div>
+
+  <!-- ==================== GAME SCREEN ==================== -->
+  <div id="screen-game" class="screen">
+
+    <!-- SECTION 1: Mission -->
+    <div class="section-top">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <span class="level-badge" id="level-badge" style="margin-bottom:0;">NIVEL 1 / 3</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="btn-nav-level" id="btn-prev-level" onclick="navigateLevel(-1)" title="Nivel anterior">◀</button>
+          <button class="btn-nav-level" id="btn-next-level" onclick="navigateLevel(1)" title="Nivel siguiente">▶</button>
+          <button class="btn-exit-game" onclick="showScreen('screen-menu')">✕ SALIR</button>
+        </div>
+      </div>
+      <p class="mission-text" id="mission-text">Cargando misión...</p>
+      <div class="level-dots" style="margin-top:8px;">
+        <div class="level-dot" id="dot-1"></div>
+        <div class="level-dot" id="dot-2"></div>
+        <div class="level-dot" id="dot-3"></div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Game Scene -->
+    <div class="section-scene">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Attack overlay -->
+      <div id="attack-overlay">
+        <div class="screen-flash"></div>
+        <div class="laser-beam" id="laser-beam"></div>
+      </div>
+
+      <!-- Result overlay -->
+      <div id="result-overlay">
+        <div class="result-box" id="result-box">
+          <span class="result-emoji" id="result-emoji">🎉</span>
+          <div class="result-title" id="result-title">¡Felicidades!</div>
+          <div class="result-msg" id="result-msg"></div>
+          <div class="result-buttons" id="result-buttons"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: Console -->
+    <div class="section-console">
+      <div class="console-header">
+        <div class="console-dot" style="background:#ff5f57"></div>
+        <div class="console-dot" style="background:#febc2e"></div>
+        <div class="console-dot" style="background:#28c840"></div>
+        <span class="console-header-text">Python 3.0 Console</span>
+      </div>
+
+      <div class="hint-box" id="hint-box"></div>
+
+      <div class="console-input-area">
+        <span class="console-prompt">>>></span>
+        <div class="editor-wrapper">
+          <div id="highlight-layer" aria-hidden="true"></div>
+          <textarea id="code-input" spellcheck="false" autocorrect="off"
+            autocapitalize="none" autocomplete="off"
+            placeholder="Escribe tu código Python aquí..."></textarea>
+        </div>
+      </div>
+
+      <div class="console-footer">
+        <span id="feedback-msg"></span>
+        <button class="btn-hint" onclick="showHint()" id="hint-btn">💡 Pista</button>
+        <button class="btn-validate" onclick="validateCode()">✓ VALIDAR</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ==================== AUDIO ==================== -->
+<script>
+// ===== STATE =====
+let currentLevel = 1;
+let musicOn = true;
+let audioCtx = null;
+let musicInterval = null;
+let canvasAnim = null;
+let alienAnimating = false;
+let completedLevels = [false, false, false];
+
+// Cronómetro y puntos
+let timerSeconds = 0;
+let timerInterval = null;
+let totalPoints = 0;
+let levelPoints = 0;
+
+// Load saved state
+try {
+  const saved = localStorage.getItem('pyplanet_state');
+  if (saved) {
+    const s = JSON.parse(saved);
+    currentLevel = s.currentLevel || 1;
+    completedLevels = s.completedLevels || [false, false, false];
+    musicOn = s.musicOn !== undefined ? s.musicOn : true;
+  }
+} catch(e) {}
+
+function saveState() {
+  try {
+    localStorage.setItem('pyplanet_state', JSON.stringify({
+      currentLevel, completedLevels, musicOn
+    }));
+  } catch(e) {}
+}
+
+// ===== AUDIO ENGINE (Web Audio API chiptune) =====
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playNote(freq, startTime, duration, type='square', vol=0.05) {
+  const ctx = getAudioCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, startTime);
+  gain.gain.setValueAtTime(vol, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.01);
+}
+
+const melody80 = [
+  [330,0.15],[392,0.15],[494,0.15],[523,0.15],[587,0.3],
+  [523,0.15],[494,0.15],[440,0.3],[392,0.15],[330,0.3],
+  [262,0.15],[294,0.15],[330,0.15],[392,0.3],[330,0.15],
+  [294,0.15],[262,0.3],[220,0.15],[262,0.45]
+];
+const bassLine = [
+  [131,0.3],[165,0.3],[196,0.3],[196,0.3],[196,0.3],
+  [165,0.3],[165,0.3],[147,0.3],[131,0.3],[131,0.6]
+];
+
+function playMelody() {
+  if (!musicOn) return;
+  const ctx = getAudioCtx();
+  let t = ctx.currentTime;
+  melody80.forEach(([freq, dur]) => {
+    playNote(freq, t, dur * 0.85, 'square', 0.04);
+    t += dur;
+  });
+  let bt = ctx.currentTime;
+  bassLine.forEach(([freq, dur]) => {
+    playNote(freq, bt, dur * 0.8, 'sawtooth', 0.03);
+    bt += dur;
+  });
+}
+
+function startMusic() {
+  if (!musicOn) return;
+  playMelody();
+  const totalDur = melody80.reduce((a,[,d])=>a+d, 0) * 1000;
+  musicInterval = setInterval(() => { if (musicOn) playMelody(); }, totalDur);
+}
+function stopMusic() {
+  clearInterval(musicInterval);
+  musicInterval = null;
+}
+
+function playSFX(type) {
+  const ctx = getAudioCtx();
+  const t = ctx.currentTime;
+  if (type === 'success') {
+    [523,659,784,1047].forEach((f,i) => playNote(f, t + i*0.12, 0.15, 'square', 0.06));
+  } else if (type === 'attack') {
+    [800,600,400,200].forEach((f,i) => playNote(f, t + i*0.05, 0.1, 'sawtooth', 0.08));
+    playNote(150, t+0.2, 0.3, 'sawtooth', 0.07);
+  } else if (type === 'click') {
+    playNote(880, t, 0.06, 'square', 0.03);
+  } else if (type === 'win') {
+    [523,659,784,659,784,1047].forEach((f,i) => playNote(f, t + i*0.1, 0.12, 'square', 0.05));
+  }
+}
+
+// ===== SCREEN MANAGEMENT =====
+function showScreen(id) {
+  playSFX('click');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-menu') { updateMenuDots(); stopTimer(); }
+}
+
+function updateMenuDots() {
+  for (let i = 1; i <= 3; i++) {
+    const dot = document.getElementById('dot-menu-' + i);
+    if (!dot) continue;
+    dot.className = 'level-dot';
+    if (completedLevels[i-1]) dot.classList.add('done');
+    else if (i === currentLevel) dot.classList.add('active');
+  }
+}
+
+// ===== TOGGLE MUSIC =====
+function toggleMusic() {
+  musicOn = !musicOn;
+  const tog = document.getElementById('music-toggle');
+  tog.classList.toggle('on', musicOn);
+  if (musicOn) {
+    try { getAudioCtx().resume(); } catch(e) {}
+    startMusic();
+  } else {
+    stopMusic();
+  }
+  saveState();
+}
+
+// ===== CRONÓMETRO Y PUNTOS =====
+function startTimer() {
+  stopTimer();
+  timerSeconds = 0;
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function calcPoints(seconds) {
+  if (seconds <= 50) return 500;
+  if (seconds <= 90) return 300;
+  return 100;
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return (m > 0 ? m + 'm ' : '') + sec + 's';
+}
+
+// ===== CRONÓMETRO Y PUNTOS =====
+function createStars(containerId, count) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2.5 + 0.5;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      top:${Math.random()*100}%;
+      animation-duration:${Math.random()*3+1.5}s;
+      animation-delay:${Math.random()*3}s;
+    `;
+    c.appendChild(s);
+  }
+}
+
+// ===== GAME CANVAS RENDERING =====
+const canvas = document.getElementById('game-canvas');
+const ctx2d = canvas.getContext('2d');
+let animFrame = null;
+let time = 0;
+let astronautHit = false;
+let hitTimer = 0;
+
+function resizeCanvas() {
+  const scene = document.querySelector('.section-scene');
+  if (scene) {
+    canvas.width = scene.clientWidth;
+    canvas.height = scene.clientHeight;
+  }
+}
+
+function drawScene() {
+  const W = canvas.width, H = canvas.height;
+  if (W === 0 || H === 0) return;
+
+  ctx2d.clearRect(0, 0, W, H);
+  time += 0.02;
+
+  // Mars sky gradient
+  const sky = ctx2d.createLinearGradient(0, 0, 0, H * 0.65);
+  sky.addColorStop(0, '#1a0505');
+  sky.addColorStop(0.3, '#3d0e0e');
+  sky.addColorStop(0.6, '#8b2500');
+  sky.addColorStop(1, '#c1440e');
+  ctx2d.fillStyle = sky;
+  ctx2d.fillRect(0, 0, W, H * 0.65);
+
+  // Stars in sky
+  ctx2d.fillStyle = 'rgba(255,255,255,0.7)';
+  [[0.1,0.05],[0.25,0.12],[0.4,0.04],[0.6,0.08],[0.75,0.15],[0.85,0.03],[0.95,0.10]].forEach(([x,y]) => {
+    const s = 1.5 + Math.sin(time + x*10) * 0.5;
+    ctx2d.beginPath();
+    ctx2d.arc(W*x, H*y, s, 0, Math.PI*2);
+    ctx2d.fill();
+  });
+
+  // Two moons
+  ctx2d.fillStyle = 'rgba(255,220,180,0.85)';
+  ctx2d.beginPath(); ctx2d.arc(W*0.2, H*0.1, 8, 0, Math.PI*2); ctx2d.fill();
+  ctx2d.fillStyle = 'rgba(200,190,210,0.7)';
+  ctx2d.beginPath(); ctx2d.arc(W*0.7, H*0.07, 5, 0, Math.PI*2); ctx2d.fill();
+
+  // Spaceship background
+  const shipX = W * 0.55, shipY = H * 0.08;
+  drawSpaceship(shipX, shipY, W * 0.18);
+
+  // Texto de nivel (derecha de la nave)
+  ctx2d.save();
+  const lvlFontSize = Math.max(9, W * 0.032);
+  ctx2d.font = `bold ${lvlFontSize}px 'Share Tech Mono', monospace`;
+  ctx2d.textAlign = 'left';
+  ctx2d.fillStyle = 'rgba(10,10,30,0.65)';
+  const lvlText = 'Nivel ' + currentLevel;
+  const lvlTW = ctx2d.measureText(lvlText).width;
+  const lvlTX = shipX + W * 0.19;
+  const lvlTY = shipY + lvlFontSize * 0.4;
+  ctx2d.fillRect(lvlTX - 4, lvlTY - lvlFontSize, lvlTW + 8, lvlFontSize + 6);
+  ctx2d.fillStyle = '#FFD43B';
+  ctx2d.fillText(lvlText, lvlTX, lvlTY);
+  ctx2d.restore();
+
+  // Ground
+  const ground = ctx2d.createLinearGradient(0, H*0.62, 0, H);
+  ground.addColorStop(0, '#8b3a0f');
+  ground.addColorStop(0.3, '#7a3208');
+  ground.addColorStop(1, '#5c2506');
+  ctx2d.fillStyle = ground;
+  ctx2d.fillRect(0, H*0.62, W, H*0.38);
+
+  // Ground surface details (craters)
+  [[0.15,0.68,12],[0.5,0.75,8],[0.8,0.7,15],[0.35,0.82,6]].forEach(([rx,ry,r]) => {
+    ctx2d.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx2d.lineWidth = 2;
+    ctx2d.beginPath();
+    ctx2d.ellipse(W*rx, H*ry, r, r*0.4, 0, 0, Math.PI*2);
+    ctx2d.stroke();
+  });
+
+  // Rocks
+  [[0.28,0.65,14,10],[0.72,0.64,10,8],[0.12,0.67,8,6]].forEach(([rx,ry,rw,rh]) => {
+    ctx2d.fillStyle = '#6b2c08';
+    ctx2d.beginPath();
+    ctx2d.ellipse(W*rx, H*ry, rw, rh, 0, 0, Math.PI*2);
+    ctx2d.fill();
+  });
+
+  // Astronaut (left side) - Player
+  const astX = W * 0.2;
+  const astY = H * 0.58;
+  const astS = Math.min(W, H) * 0.18;
+  const bobY = Math.sin(time * 1.2) * 2;
+
+  if (astronautHit) {
+    // Flash red when hit
+    ctx2d.save();
+    ctx2d.globalAlpha = Math.abs(Math.sin(hitTimer * 8));
+    hitTimer += 0.1;
+  }
+  drawAstronaut(astX, astY + bobY, astS);
+  if (astronautHit) ctx2d.restore();
+
+  // Alien (right side)
+  const alienX = W * 0.78;
+  const alienY = H * 0.55;
+  const alienS = Math.min(W, H) * 0.2;
+  const alienBob = Math.sin(time * 0.8 + 1) * 3;
+  drawAlien(alienX, alienY + alienBob, alienS);
+
+  ctx2d.textAlign = 'left';
+
+  // ===== HUD: Cronómetro y Puntos (arriba izquierda) =====
+  const hudX = W * 0.03;
+  const hudY = H * 0.04;
+  const hudW = W * 0.42;
+  const hudH = H * 0.18;
+
+  // Fondo semitransparente del HUD
+  ctx2d.save();
+  ctx2d.fillStyle = 'rgba(10,10,30,0.72)';
+  ctx2d.strokeStyle = 'rgba(48,105,152,0.8)';
+  ctx2d.lineWidth = 1.5;
+  roundRect2d(hudX, hudY, hudW, hudH, 6);
+  ctx2d.fill();
+  ctx2d.stroke();
+
+  // Ícono y texto TIEMPO
+  const fSize = Math.max(8, W * 0.028);
+  const fBig  = Math.max(11, W * 0.038);
+
+  ctx2d.fillStyle = '#66aaff';
+  ctx2d.font = `${fSize}px 'Share Tech Mono', monospace`;
+  ctx2d.fillText('⏱ TIEMPO', hudX + 8, hudY + fSize + 4);
+
+  ctx2d.fillStyle = '#ffffff';
+  ctx2d.font = `bold ${fBig}px 'Share Tech Mono', monospace`;
+  ctx2d.fillText(formatTime(timerSeconds), hudX + 8, hudY + fSize + 4 + fBig + 2);
+
+  // Separador
+  ctx2d.strokeStyle = 'rgba(48,105,152,0.5)';
+  ctx2d.lineWidth = 1;
+  ctx2d.beginPath();
+  ctx2d.moveTo(hudX + 6, hudY + fSize + 4 + fBig + 8);
+  ctx2d.lineTo(hudX + hudW - 6, hudY + fSize + 4 + fBig + 8);
+  ctx2d.stroke();
+
+  // Ícono y texto PUNTOS
+  ctx2d.fillStyle = '#FFD43B';
+  ctx2d.font = `${fSize}px 'Share Tech Mono', monospace`;
+  ctx2d.fillText('★ PUNTOS', hudX + 8, hudY + fSize + 4 + fBig + 8 + fSize + 4);
+
+  ctx2d.fillStyle = '#FFD43B';
+  ctx2d.font = `bold ${fBig}px 'Share Tech Mono', monospace`;
+  ctx2d.fillText(totalPoints, hudX + 8, hudY + fSize + 4 + fBig + 8 + fSize + 4 + fBig + 2);
+
+  ctx2d.restore();
+
+  animFrame = requestAnimationFrame(drawScene);
+}
+
+function roundRect2d(x, y, w, h, r) {
+  ctx2d.beginPath();
+  ctx2d.moveTo(x + r, y);
+  ctx2d.lineTo(x + w - r, y);
+  ctx2d.arcTo(x + w, y, x + w, y + r, r);
+  ctx2d.lineTo(x + w, y + h - r);
+  ctx2d.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx2d.lineTo(x + r, y + h);
+  ctx2d.arcTo(x, y + h, x, y + h - r, r);
+  ctx2d.lineTo(x, y + r);
+  ctx2d.arcTo(x, y, x + r, y, r);
+  ctx2d.closePath();
+}
+
+function drawSpaceship(x, y, size) {
+  ctx2d.save();
+  ctx2d.translate(x, y);
+  const s = size;
+
+  // --- Motor thrusters glow (bottom) ---
+  const thrustGlow = ctx2d.createRadialGradient(0, s*0.55, 0, 0, s*0.55, s*0.7);
+  thrustGlow.addColorStop(0, 'rgba(80,180,255,0.45)');
+  thrustGlow.addColorStop(0.5, 'rgba(50,120,255,0.15)');
+  thrustGlow.addColorStop(1, 'transparent');
+  ctx2d.fillStyle = thrustGlow;
+  ctx2d.fillRect(-s*0.8, s*0.1, s*1.6, s*1.0);
+
+  // --- Thruster flames (3 engines) ---
+  [-s*0.32, 0, s*0.32].forEach((tx, i) => {
+    const flicker = Math.sin(time * 8 + i * 2) * 0.08 + 0.92;
+    const flameGrad = ctx2d.createLinearGradient(tx, s*0.42, tx, s*0.42 + s*0.38*flicker);
+    flameGrad.addColorStop(0, 'rgba(255,255,180,0.95)');
+    flameGrad.addColorStop(0.3, 'rgba(100,180,255,0.8)');
+    flameGrad.addColorStop(1, 'rgba(50,100,255,0)');
+    ctx2d.fillStyle = flameGrad;
+    ctx2d.beginPath();
+    ctx2d.ellipse(tx, s*0.42 + s*0.12*flicker, s*0.07, s*0.28*flicker, 0, 0, Math.PI*2);
+    ctx2d.fill();
+  });
+
+  // --- Main disc body (saucer) ---
+  // Shadow underside
+  ctx2d.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx2d.beginPath();
+  ctx2d.ellipse(s*0.04, s*0.06, s*0.95, s*0.38, 0, 0, Math.PI*2);
+  ctx2d.fill();
+  // Main hull
+  const hullGrad = ctx2d.createLinearGradient(0, -s*0.3, 0, s*0.4);
+  hullGrad.addColorStop(0, '#c8c8e8');
+  hullGrad.addColorStop(0.4, '#9898bb');
+  hullGrad.addColorStop(1, '#555577');
+  ctx2d.fillStyle = hullGrad;
+  ctx2d.beginPath();
+  ctx2d.ellipse(0, 0, s*0.92, s*0.35, 0, 0, Math.PI*2);
+  ctx2d.fill();
+  // Hull rim highlight
+  ctx2d.strokeStyle = 'rgba(200,210,255,0.6)';
+  ctx2d.lineWidth = s*0.025;
+  ctx2d.beginPath();
+  ctx2d.ellipse(0, -s*0.05, s*0.85, s*0.28, 0, Math.PI*1.1, Math.PI*1.9);
+  ctx2d.stroke();
+
+  // --- Engine ring / belt ---
+  ctx2d.fillStyle = '#444466';
+  ctx2d.beginPath();
+  ctx2d.ellipse(0, s*0.06, s*0.92, s*0.14, 0, 0, Math.PI*2);
+  ctx2d.fill();
+  // Engine pods (6 around the belt)
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2;
+    const ex = Math.cos(angle) * s * 0.7;
+    const ey = Math.sin(angle) * s * 0.1 + s*0.06;
+    ctx2d.fillStyle = i % 2 === 0 ? '#6666aa' : '#333355';
+    ctx2d.beginPath();
+    ctx2d.ellipse(ex, ey, s*0.09, s*0.06, 0, 0, Math.PI*2);
+    ctx2d.fill();
+    // Lit indicator
+    ctx2d.fillStyle = i % 2 === 0 ? '#aaffff' : '#ff4444';
+    ctx2d.beginPath();
+    ctx2d.arc(ex, ey, s*0.025, 0, Math.PI*2);
+    ctx2d.fill();
+  }
+
+  // --- Cockpit dome ---
+  // Dome base ring
+  ctx2d.fillStyle = '#777799';
+  ctx2d.beginPath();
+  ctx2d.ellipse(0, -s*0.12, s*0.38, s*0.1, 0, 0, Math.PI*2);
+  ctx2d.fill();
+  // Dome body
+  const domeGrad = ctx2d.createRadialGradient(-s*0.08, -s*0.38, 0, 0, -s*0.22, s*0.38);
+  domeGrad.addColorStop(0, 'rgba(180,230,255,0.95)');
+  domeGrad.addColorStop(0.4, 'rgba(60,160,255,0.75)');
+  domeGrad.addColorStop(1, 'rgba(10,60,140,0.6)');
+  ctx2d.fillStyle = domeGrad;
+  ctx2d.beginPath();
+  ctx2d.ellipse(0, -s*0.16, s*0.36, s*0.44, 0, Math.PI, Math.PI*2);
+  ctx2d.fill();
+  // Dome shine streaks
+  ctx2d.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx2d.lineWidth = s*0.03;
+  ctx2d.beginPath();
+  ctx2d.moveTo(-s*0.16, -s*0.44);
+  ctx2d.quadraticCurveTo(-s*0.22, -s*0.32, -s*0.18, -s*0.2);
+  ctx2d.stroke();
+  ctx2d.lineWidth = s*0.015;
+  ctx2d.beginPath();
+  ctx2d.moveTo(-s*0.06, -s*0.46);
+  ctx2d.quadraticCurveTo(-s*0.1, -s*0.36, -s*0.08, -s*0.24);
+  ctx2d.stroke();
+  // Dome frame lines
+  ctx2d.strokeStyle = 'rgba(100,150,200,0.4)';
+  ctx2d.lineWidth = s*0.015;
+  [-s*0.18, 0, s*0.18].forEach(fx => {
+    ctx2d.beginPath();
+    ctx2d.moveTo(fx, -s*0.14);
+    ctx2d.lineTo(fx * 0.6, -s*0.48);
+    ctx2d.stroke();
+  });
+  // Alien silhouette inside dome
+  ctx2d.fillStyle = 'rgba(0,80,0,0.5)';
+  ctx2d.beginPath();
+  ctx2d.ellipse(0, -s*0.3, s*0.09, s*0.11, 0, 0, Math.PI*2);
+  ctx2d.fill();
+  ctx2d.fillStyle = 'rgba(0,60,0,0.4)';
+  ctx2d.beginPath();
+  ctx2d.ellipse(0, -s*0.42, s*0.06, s*0.07, 0, 0, Math.PI*2);
+  ctx2d.fill();
+
+  // --- Landing gear struts (3) ---
+  ctx2d.strokeStyle = '#666688';
+  ctx2d.lineWidth = s*0.04;
+  ctx2d.lineCap = 'round';
+  [[-s*0.5, s*0.28, -s*0.62, s*0.48], [0, s*0.32, 0, s*0.52], [s*0.5, s*0.28, s*0.62, s*0.48]].forEach(([x1,y1,x2,y2]) => {
+    ctx2d.beginPath();
+    ctx2d.moveTo(x1, y1); ctx2d.lineTo(x2, y2);
+    ctx2d.stroke();
+    // Foot pad
+    ctx2d.fillStyle = '#555577';
+    ctx2d.beginPath();
+    ctx2d.ellipse(x2, y2+s*0.03, s*0.09, s*0.03, 0, 0, Math.PI*2);
+    ctx2d.fill();
+  });
+
+  // --- Antenna on top ---
+  ctx2d.strokeStyle = '#aaaacc';
+  ctx2d.lineWidth = s*0.02;
+  ctx2d.beginPath();
+  ctx2d.moveTo(0, -s*0.58); ctx2d.lineTo(0, -s*0.72);
+  ctx2d.stroke();
+  // Blinking antenna tip
+  const blink = Math.sin(time * 4) > 0;
+  ctx2d.fillStyle = blink ? '#ff3333' : '#880000';
+  ctx2d.beginPath();
+  ctx2d.arc(0, -s*0.73, s*0.04, 0, Math.PI*2);
+  ctx2d.fill();
+  // Small dish
+  ctx2d.strokeStyle = '#9999bb';
+  ctx2d.lineWidth = s*0.018;
+  ctx2d.beginPath();
+  ctx2d.arc(s*0.2, -s*0.52, s*0.1, Math.PI*0.8, Math.PI*1.8);
+  ctx2d.stroke();
+  ctx2d.beginPath();
+  ctx2d.moveTo(s*0.2, -s*0.52); ctx2d.lineTo(s*0.2, -s*0.42);
+  ctx2d.stroke();
+
+  ctx2d.restore();
+}
+
+function drawAstronaut(x, y, size) {
+  const s = size;
+  ctx2d.save();
+  ctx2d.translate(x, y);
+
+  // Legs
+  ctx2d.fillStyle = '#ffffff';
+  ctx2d.fillRect(-s*0.12, s*0.3, s*0.1, s*0.25);
+  ctx2d.fillRect(s*0.02, s*0.3, s*0.1, s*0.25);
+  // Boots
+  ctx2d.fillStyle = '#cccccc';
+  ctx2d.fillRect(-s*0.14, s*0.52, s*0.13, s*0.08);
+  ctx2d.fillRect(s*0.01, s*0.52, s*0.13, s*0.08);
+
+  // Backpack
+  ctx2d.fillStyle = '#aaaaaa';
+  ctx2d.fillRect(s*0.1, s*0.05, s*0.1, s*0.22);
+
+  // Body (suit)
+  ctx2d.fillStyle = '#e8e8ff';
+  ctx2d.beginPath();
+  ctx2d.roundRect(-s*0.15, s*0.05, s*0.3, s*0.28, s*0.04);
+  ctx2d.fill();
+
+  // Chest patch (Python logo colors)
+  ctx2d.fillStyle = '#306998';
+  ctx2d.fillRect(-s*0.08, s*0.1, s*0.06, s*0.1);
+  ctx2d.fillStyle = '#FFD43B';
+  ctx2d.fillRect(-s*0.01, s*0.1, s*0.06, s*0.1);
+
+  // Arms
+  ctx2d.fillStyle = '#e8e8ff';
+  ctx2d.fillRect(-s*0.24, s*0.07, s*0.1, s*0.2);
+  ctx2d.fillRect(s*0.14, s*0.07, s*0.1, s*0.2);
+  // Gloves
+  ctx2d.fillStyle = '#aaaaaa';
+  ctx2d.beginPath(); ctx2d.arc(-s*0.19, s*0.28, s*0.07, 0, Math.PI*2); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.arc(s*0.19, s*0.28, s*0.07, 0, Math.PI*2); ctx2d.fill();
+
+  // Helmet
+  ctx2d.fillStyle = '#ddddee';
+  ctx2d.beginPath();
+  ctx2d.arc(0, -s*0.02, s*0.2, 0, Math.PI*2);
+  ctx2d.fill();
+  // Visor
+  ctx2d.fillStyle = '#80c8ff';
+  ctx2d.beginPath();
+  ctx2d.ellipse(0, -s*0.02, s*0.13, s*0.1, 0, 0, Math.PI*2);
+  ctx2d.fill();
+  // Visor shine
+  ctx2d.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx2d.beginPath();
+  ctx2d.ellipse(-s*0.04, -s*0.06, s*0.05, s*0.03, -0.5, 0, Math.PI*2);
+  ctx2d.fill();
+  // Helmet detail ring
+  ctx2d.strokeStyle = '#aaaacc';
+  ctx2d.lineWidth = s*0.02;
+  ctx2d.beginPath();
+  ctx2d.arc(0, -s*0.02, s*0.2, 0, Math.PI*2);
+  ctx2d.stroke();
+
+  ctx2d.restore();
+}
+
+function drawAlien(x, y, size) {
+  const s = size;
+  ctx2d.save();
+  ctx2d.translate(x, y);
+
+  // Shadow
+  ctx2d.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx2d.beginPath();
+  ctx2d.ellipse(0, s*0.62, s*0.3, s*0.07, 0, 0, Math.PI*2);
+  ctx2d.fill();
+
+  // Legs (tentacle-like)
+  ctx2d.strokeStyle = '#44aa44';
+  ctx2d.lineWidth = s*0.06;
+  ctx2d.lineCap = 'round';
+  [[-s*0.15, s*0.35, -s*0.22, s*0.6], [s*0.15, s*0.35, s*0.22, s*0.6], [0, s*0.35, 0, s*0.62]].forEach(([x1,y1,x2,y2]) => {
+    ctx2d.beginPath();
+    ctx2d.moveTo(x1,y1);
+    ctx2d.quadraticCurveTo(x1*1.5, (y1+y2)/2, x2, y2);
+    ctx2d.stroke();
+  });
+
+  // Body
+  const bodyGrad = ctx2d.createRadialGradient(-s*0.05, -s*0.05, 0, 0, 0, s*0.32);
+  bodyGrad.addColorStop(0, '#88ff88');
+  bodyGrad.addColorStop(0.5, '#33cc44');
+  bodyGrad.addColorStop(1, '#115522');
+  ctx2d.fillStyle = bodyGrad;
+  ctx2d.beginPath();
+  ctx2d.ellipse(0, s*0.1, s*0.22, s*0.28, 0, 0, Math.PI*2);
+  ctx2d.fill();
+
+  // Arms
+  ctx2d.strokeStyle = '#44aa44';
+  ctx2d.lineWidth = s*0.055;
+  // Right arm (holding gun) - gun points LEFT (toward astronaut)
+  ctx2d.beginPath();
+  ctx2d.moveTo(s*0.2, s*0.05);
+  ctx2d.quadraticCurveTo(s*0.35, s*0.1, s*0.3, s*0.25);
+  ctx2d.stroke();
+  // Left arm
+  ctx2d.beginPath();
+  ctx2d.moveTo(-s*0.2, s*0.05);
+  ctx2d.quadraticCurveTo(-s*0.32, s*0.1, -s*0.28, s*0.25);
+  ctx2d.stroke();
+
+  // Laser gun (on right arm end, pointing left)
+  ctx2d.save();
+  ctx2d.translate(s*0.3, s*0.25);
+  ctx2d.fillStyle = '#888800';
+  ctx2d.fillRect(-s*0.2, -s*0.04, s*0.2, s*0.08); // barrel pointing left
+  ctx2d.fillStyle = '#555500';
+  ctx2d.fillRect(s*0.02, -s*0.04, s*0.06, s*0.1); // handle
+  // Muzzle glow
+  ctx2d.fillStyle = 'rgba(255,200,0,0.6)';
+  ctx2d.beginPath(); ctx2d.arc(-s*0.2, 0, s*0.03, 0, Math.PI*2); ctx2d.fill();
+  ctx2d.restore();
+
+  // Head
+  const headGrad = ctx2d.createRadialGradient(-s*0.05, -s*0.18, 0, 0, -s*0.18, s*0.22);
+  headGrad.addColorStop(0, '#aaffaa');
+  headGrad.addColorStop(1, '#228833');
+  ctx2d.fillStyle = headGrad;
+  ctx2d.beginPath();
+  ctx2d.ellipse(0, -s*0.18, s*0.2, s*0.22, 0, 0, Math.PI*2);
+  ctx2d.fill();
+
+  // Antennae
+  ctx2d.strokeStyle = '#44aa44';
+  ctx2d.lineWidth = s*0.025;
+  [[-s*0.08, -s*0.36, -s*0.14, -s*0.5], [s*0.08, -s*0.36, s*0.14, -s*0.5]].forEach(([x1,y1,x2,y2]) => {
+    ctx2d.beginPath();
+    ctx2d.moveTo(x1,y1); ctx2d.lineTo(x2,y2); ctx2d.stroke();
+    ctx2d.fillStyle = '#ffff00';
+    ctx2d.beginPath(); ctx2d.arc(x2,y2, s*0.04, 0, Math.PI*2); ctx2d.fill();
+  });
+
+  // Eyes (3 eyes)
+  [[-s*0.07,-s*0.18],[s*0.07,-s*0.18],[0,-s*0.3]].forEach(([ex,ey]) => {
+    ctx2d.fillStyle = '#ff3300';
+    ctx2d.beginPath(); ctx2d.ellipse(ex, ey, s*0.055, s*0.07, 0, 0, Math.PI*2); ctx2d.fill();
+    ctx2d.fillStyle = '#ff9900';
+    ctx2d.beginPath(); ctx2d.ellipse(ex, ey, s*0.025, s*0.035, 0, 0, Math.PI*2); ctx2d.fill();
+    ctx2d.fillStyle = '#000';
+    ctx2d.beginPath(); ctx2d.arc(ex, ey, s*0.012, 0, Math.PI*2); ctx2d.fill();
+  });
+
+  // Mouth (menacing smile)
+  ctx2d.strokeStyle = '#003300';
+  ctx2d.lineWidth = s*0.025;
+  ctx2d.beginPath();
+  ctx2d.arc(0, -s*0.07, s*0.08, 0.2, Math.PI - 0.2);
+  ctx2d.stroke();
+  // Fangs
+  ctx2d.fillStyle = 'white';
+  [[-s*0.05,-s*0.07],[s*0.05,-s*0.07]].forEach(([fx,fy]) => {
+    ctx2d.beginPath();
+    ctx2d.moveTo(fx, fy);
+    ctx2d.lineTo(fx - s*0.02, fy + s*0.04);
+    ctx2d.lineTo(fx + s*0.02, fy + s*0.04);
+    ctx2d.closePath();
+    ctx2d.fill();
+  });
+
+  ctx2d.restore();
+}
+
+// ===== LEVEL DATA =====
+const levels = [
+  {
+    badge: 'NIVEL 1 / 3',
+    mission: 'Saluda al ser extraterrestre mediante un <strong>¡Hola, Mundo!</strong>, con la sintaxis correcta de Python 3.0.',
+    hint: 'Usa: print("¡Hola, Mundo!")',
+    validate: (code) => {
+      const c = code.trim().replace(/\r\n/g,'\n');
+      return /^print\s*\(\s*["']¡Hola,\s*Mundo!["']\s*\)\s*$/.test(c)
+          || /^print\s*\(\s*["']!Hola,\s*Mundo!["']\s*\)\s*$/.test(c)
+          || /^print\s*\(\s*["']Hola,\s*Mundo!["']\s*\)\s*$/.test(c);
+    },
+    successTitle: '¡Felicidades!',
+    successMsg: '¡El alien te entiende! Has escrito correctamente tu primer programa en Python.',
+    nextBtn: 'SIGUIENTE NIVEL →',
+    extraBtn: null
+  },
+  {
+    badge: 'NIVEL 2 / 3',
+    mission: 'Menciona el tiempo en minutos que llevas en el Planeta (8 minutos). Usa una variable llamada <strong>Minutos</strong> que almacene el número <strong>8</strong> y luego muéstrala en pantalla.',
+    hint: 'Minutos = 8\nprint(Minutos)',
+    validate: (code) => {
+      const c = code.trim().replace(/\r\n/g,'\n');
+      const lines = c.split('\n').map(l=>l.trim()).filter(l=>l);
+      if (lines.length < 2) return false;
+      const varOk = /^Minutos\s*=\s*8$/.test(lines[0]);
+      const printOk = /^print\s*\(\s*Minutos\s*\)\s*$/.test(lines[1]);
+      return varOk && printOk;
+    },
+    successTitle: '¡Felicidades!',
+    successMsg: '¡Has pasado al siguiente nivel! Aprendiste a declarar variables y mostrarlas.',
+    nextBtn: 'SIGUIENTE NIVEL →',
+    extraBtn: null
+  },
+  {
+    badge: 'NIVEL 3 / 3',
+    mission: 'Menciona el tiempo en el Planeta (8 minutos) y multiplica por 3 (¡el tiempo aquí es triple!). Usa <strong>MinutosTierra = 8</strong>, luego <strong>MinutosAlien = MinutosTierra * 3</strong>, y muestra <strong>MinutosAlien</strong>.',
+    hint: 'MinutosTierra = 8\nMinutosAlien = MinutosTierra * 3\nprint(MinutosAlien)',
+    validate: (code) => {
+      const c = code.trim().replace(/\r\n/g,'\n');
+      const lines = c.split('\n').map(l=>l.trim()).filter(l=>l);
+      if (lines.length < 3) return false;
+      const v1 = /^MinutosTierra\s*=\s*8$/.test(lines[0]);
+      const v2 = /^MinutosAlien\s*=\s*MinutosTierra\s*\*\s*3$/.test(lines[1]);
+      const pr = /^print\s*\(\s*MinutosAlien\s*\)\s*$/.test(lines[2]);
+      return v1 && v2 && pr;
+    },
+    successTitle: '¡Felicidades!',
+    successMsg: '¡Has completado el Demo! Aprendiste variables, operaciones y print(). ¡Eres un programador Python!',
+    nextBtn: null,
+    extraBtn: 'REINICIAR JUEGO'
+  }
+];
+
+// ===== GAME LOGIC =====
+function startGame() {
+  playSFX('click');
+  loadLevel(currentLevel);
+  showScreen('screen-game');
+  resizeCanvas();
+  if (animFrame) cancelAnimationFrame(animFrame);
+  astronautHit = false;
+  hitTimer = 0;
+  drawScene();
+}
+
+function loadLevel(n) {
+  currentLevel = n;
+  const lvl = levels[n - 1];
+  document.getElementById('level-badge').textContent = lvl.badge;
+  document.getElementById('mission-text').innerHTML = lvl.mission;
+  document.getElementById('code-input').value = '';
+  syncHighlight();
+  document.getElementById('feedback-msg').textContent = '';
+  document.getElementById('hint-box').classList.remove('visible');
+  document.getElementById('hint-box').textContent = '';
+  document.getElementById('result-overlay').classList.remove('active');
+
+  // Level dots
+  for (let i = 1; i <= 3; i++) {
+    const dot = document.getElementById('dot-' + i);
+    if (!dot) continue;
+    dot.className = 'level-dot';
+    if (completedLevels[i-1]) dot.classList.add('done');
+    else if (i === n) dot.classList.add('active');
+  }
+  startTimer();
+  updateNavButtons();
+  saveState();
+}
+
+function navigateLevel(dir) {
+  const next = currentLevel + dir;
+  if (next < 1 || next > 3) return;
+  playSFX('click');
+  loadLevel(next);
+}
+
+function updateNavButtons() {
+  const prev = document.getElementById('btn-prev-level');
+  const next = document.getElementById('btn-next-level');
+  if (!prev || !next) return;
+  prev.classList.toggle('disabled', currentLevel === 1);
+  next.classList.toggle('disabled', currentLevel === 3);
+}
+
+function showHint() {
+  const hintBox = document.getElementById('hint-box');
+  const lvl = levels[currentLevel - 1];
+  if (hintBox.classList.contains('visible')) {
+    hintBox.classList.remove('visible');
+  } else {
+    hintBox.textContent = '💡 ' + lvl.hint;
+    hintBox.classList.add('visible');
+    playSFX('click');
+  }
+}
+
+function validateCode() {
+  const code = document.getElementById('code-input').value;
+  const lvl = levels[currentLevel - 1];
+  const fb = document.getElementById('feedback-msg');
+
+  if (!code.trim()) {
+    fb.style.color = '#ff6644';
+    fb.textContent = '⚠ Escribe tu código primero...';
+    return;
+  }
+
+  if (lvl.validate(code)) {
+    // SUCCESS
+    stopTimer();
+    levelPoints = calcPoints(timerSeconds);
+    totalPoints += levelPoints;
+    playSFX('success');
+    completedLevels[currentLevel - 1] = true;
+    saveState();
+    fb.textContent = '';
+    showResultOverlay(true, lvl);
+  } else {
+    // FAIL - alien attacks
+    playSFX('attack');
+    fb.style.color = '#ff4444';
+    fb.textContent = '✗ Sintaxis incorrecta. ¡El alien te ataca!';
+    triggerAttack();
+  }
+}
+
+function triggerAttack() {
+  const overlay = document.getElementById('attack-overlay');
+  const laser = document.getElementById('laser-beam');
+  const W = canvas.width;
+  const H = canvas.height;
+
+  // Position laser from alien (right, ~75%) to astronaut (left, ~20%)
+  const laserY = H * 0.55 * 0.55; // relative to scene canvas height
+  laser.style.cssText = `
+    right: 22%; top: 42%; width: 0;
+    position: absolute;
+  `;
+
+  overlay.style.display = 'block';
+  astronautHit = true;
+  hitTimer = 0;
+
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    astronautHit = false;
+    hitTimer = 0;
+  }, 1200);
+}
+
+function showResultOverlay(success, lvl) {
+  const overlay = document.getElementById('result-overlay');
+  const box = document.getElementById('result-box');
+  const emoji = document.getElementById('result-emoji');
+  const title = document.getElementById('result-title');
+  const msg = document.getElementById('result-msg');
+  const btns = document.getElementById('result-buttons');
+
+  emoji.textContent = success ? '🎉' : '💥';
+  title.textContent = lvl.successTitle;
+  title.style.color = '#FFD43B';
+
+  // Mensaje + puntos ganados
+  const pointsColor = levelPoints === 500 ? '#FFD43B' : levelPoints === 300 ? '#66aaff' : '#aaaaaa';
+  const medalEmoji  = levelPoints === 500 ? '🥇' : levelPoints === 300 ? '🥈' : '🥉';
+  msg.innerHTML =
+    lvl.successMsg +
+    `<br><br>` +
+    `<span style="font-family:'Share Tech Mono',monospace;font-size:clamp(10px,2.8vw,13px);">` +
+    `⏱ Tiempo: <b style="color:#fff">${formatTime(timerSeconds)}</b><br>` +
+    `${medalEmoji} Puntos ganados: <b style="color:${pointsColor};font-size:1.15em">+${levelPoints}</b><br>` +
+    `★ Total acumulado: <b style="color:#FFD43B">${totalPoints}</b>` +
+    `</span>`;
+
+  box.style.borderColor = success ? '#FFD43B' : '#ff4444';
+
+  btns.innerHTML = '';
+
+  if (lvl.nextBtn) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-success';
+    btn.textContent = lvl.nextBtn;
+    btn.onclick = () => {
+      playSFX('win');
+      const next = currentLevel + 1;
+      loadLevel(next);
+      overlay.classList.remove('active');
+    };
+    btns.appendChild(btn);
+  }
+
+  if (lvl.extraBtn) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-play';
+    btn.textContent = lvl.extraBtn;
+    btn.onclick = () => {
+      playSFX('click');
+      completedLevels = [false, false, false];
+      currentLevel = 1;
+      totalPoints = 0;
+      levelPoints = 0;
+      saveState();
+      loadLevel(1);
+      overlay.classList.remove('active');
+    };
+    btns.appendChild(btn);
+  }
+
+  const exitBtn = document.createElement('button');
+  exitBtn.className = 'btn btn-neutral';
+  exitBtn.textContent = 'SALIR';
+  exitBtn.onclick = exitGame;
+  btns.appendChild(exitBtn);
+
+  overlay.classList.add('active');
+}
+
+function exitGame() {
+  playSFX('click');
+  if (confirm('¿Seguro que quieres salir de PyPlanet Adventure?')) {
+    if (window.Android && window.Android.exitApp) {
+      window.Android.exitApp();
+    } else {
+      window.close();
+      // Fallback: go to menu
+      setTimeout(() => showScreen('screen-menu'), 200);
+    }
+  }
+}
+
+
+
+// ===== BACK BUTTON (Android) =====
+document.addEventListener('backbutton', function(e) {
+  e.preventDefault();
+  const active = document.querySelector('.screen.active');
+  if (active && active.id !== 'screen-menu') {
+    showScreen('screen-menu');
+  } else {
+    exitGame();
+  }
+}, false);
+
+// Keyboard back support
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const active = document.querySelector('.screen.active');
+    if (active && active.id !== 'screen-menu') showScreen('screen-menu');
+    else exitGame();
+  }
+});
+
+// ===== SYNTAX HIGHLIGHTER =====
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function highlightPython(code) {
+  const combined = new RegExp(
+    '("""[\\s\\S]*?"""|\'\'\'[\\s\\S]*?\'\'\'|"[^"\\\\]*(?:\\\\.[^"\\\\]*)*"|\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\')' +
+    '|(#[^\\n]*)' +
+    '|(\\b(?:False|None|True|and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield)\\b)' +
+    '|(\\b(?:print|input|int|float|str|bool|list|dict|tuple|set|len|range|type|abs|max|min|sum|round|sorted|reversed|enumerate|zip|map|filter|open|format|repr|super|object|Exception)\\b)' +
+    '|(\\b[A-Za-z_][A-Za-z0-9_]*\\b)' +
+    '|(\\b\\d+(?:\\.\\d+)?\\b)' +
+    '|([=+\\-*\\/\\\\%&|^~<>!]+)' +
+    '|([()\\[\\]{},.:;])',
+    'g'
+  );
+  let result = '', last = 0, m;
+  combined.lastIndex = 0;
+  while ((m = combined.exec(code)) !== null) {
+    if (m.index > last) result += escapeHtml(code.slice(last, m.index));
+    const raw = escapeHtml(m[0]);
+    if      (m[1]) result += `<span class="sy-str">${raw}</span>`;
+    else if (m[2]) result += `<span class="sy-cm">${raw}</span>`;
+    else if (m[3]) result += `<span class="sy-kw">${raw}</span>`;
+    else if (m[4]) result += `<span class="sy-bi">${raw}</span>`;
+    else if (m[5]) result += `<span class="sy-id">${raw}</span>`;
+    else if (m[6]) result += `<span class="sy-num">${raw}</span>`;
+    else if (m[7]) result += `<span class="sy-op">${raw}</span>`;
+    else if (m[8]) result += `<span class="sy-pun">${raw}</span>`;
+    else           result += raw;
+    last = m.index + m[0].length;
+  }
+  if (last < code.length) result += escapeHtml(code.slice(last));
+  return result + '\n';
+}
+
+function syncHighlight() {
+  const input = document.getElementById('code-input');
+  const layer = document.getElementById('highlight-layer');
+  if (!input || !layer) return;
+  layer.innerHTML = highlightPython(input.value);
+  layer.scrollTop  = input.scrollTop;
+  layer.scrollLeft = input.scrollLeft;
+}
+
+function initEditor() {
+  const input = document.getElementById('code-input');
+  if (!input) return;
+  input.addEventListener('input', syncHighlight);
+  input.addEventListener('scroll', syncHighlight);
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = input.selectionStart, end = input.selectionEnd;
+      input.value = input.value.substring(0,s) + '    ' + input.value.substring(end);
+      input.selectionStart = input.selectionEnd = s + 4;
+      syncHighlight();
+    }
+  });
+  syncHighlight();
+}
+
+// ===== INIT =====
+window.addEventListener('load', () => {
+  createStars('stars', 60);
+  createStars('stars2', 40);
+  createStars('stars3', 40);
+
+  initEditor();
+
+  // Music toggle init
+  const tog = document.getElementById('music-toggle');
+  tog.classList.toggle('on', musicOn);
+
+  updateMenuDots();
+  // Start music on first user interaction
+  document.addEventListener('click', function startAudio() {
+    if (musicOn) {
+      try { getAudioCtx().resume().then(() => startMusic()); } catch(e) {}
+    }
+    document.removeEventListener('click', startAudio);
+  }, { once: true });
+});
+
+window.addEventListener('resize', () => {
+  resizeCanvas();
+});
+
+// Prevent default touch behaviors
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+</script>
+
+</body>
+</html>
