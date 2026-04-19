@@ -1010,15 +1010,6 @@ function drawScene() {
   const hudW = W * 0.42;
   const hudH = H * 0.18;
 
-  // Fondo semitransparente del HUD
-  ctx2d.save();
-  ctx2d.fillStyle = 'rgba(10,10,30,0.72)';
-  ctx2d.strokeStyle = 'rgba(48,105,152,0.8)';
-  ctx2d.lineWidth = 1.5;
-  roundRect2d(hudX, hudY, hudW, hudH, 6);
-  ctx2d.fill();
-  ctx2d.stroke();
-
   // Ícono y texto TIEMPO
   const fSize = Math.max(8, W * 0.028);
   const fBig  = Math.max(11, W * 0.038);
