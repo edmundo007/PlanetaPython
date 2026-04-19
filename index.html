@@ -1629,9 +1629,12 @@ function exitGame() {
     if (window.Android && window.Android.exitApp) {
       window.Android.exitApp();
     } else {
-      window.close();
-      // Fallback: go to menu
-      setTimeout(() => showScreen('screen-menu'), 200);
+const newWin = window.open('', '_self');
+newWin.close();
+window.close();
+setTimeout(() => {
+  window.location.href = 'about:blank';
+}, 100);
     }
   }
 }
